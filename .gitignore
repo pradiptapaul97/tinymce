@@ -1,0 +1,15 @@
+node_modules/*
+node_modules
+./node_modules
+*.zip
+*.tgz
+*.gz
+*.DS_Store
+**.DS_Store
+*._.DS_Store
+package-lock.json
+./package-lock.json
+public/uploads/language-csv/*
+public/uploads/language-csv
+./public/uploads/language-csv
+*.sh

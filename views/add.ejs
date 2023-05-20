@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+  <title>Tyny Mc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<body>
+  <style>
+    .tox-notifications-container {
+      display: none;
+    }
+
+    .tox-statusbar__branding {
+      display: none;
+    }
+    .fcc-btn {
+      background-color: #199319;
+      color: white;
+      padding: 15px 25px;
+      text-decoration: none;
+      border: none;
+      height: 50px !important;
+    }
+  </style>
+
+<div class="w3-panel w3-red">
+  <h3>Alert!</h3>
+  <p>Save value will replace privious value.</p>
+  </div>
+  <div class="w3-panel">
+
+  <form action="/data/insert" id="usrform" method="post" enctype="multipart/form-data">
+
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required value=""><br><br>
+    <label for="comment">Description:</label><br><br>
+    <textarea rows="20" cols="20" name="comment" id="editor"></textarea><br>
+    <button type="submit" class="fcc-btn">Save</button>
+    <a href="/view" class="fcc-btn">Privious Data</a>
+  </form>
+</div>
+
+</body>
+
+</html>
+<script src="https://code.jquery.com/jquery-3.6.3.js"></script>
+<script src="https://cdn.tiny.cloud/1/5756amfaaaevxz79604b2cxqofmptnk3y94ezzhsadg8q6un/tinymce/5/tinymce.min.js"
+  referrerpolicy="origin"></script>
+<script>
+  tinymce.init({
+    selector: '#editor,#editorAr',
+    plugins: 'image code',
+    toolbar: 'undo redo | link image | code',
+    image_title: true,
+    automatic_uploads: true,
+    relative_urls: false,
+    remove_script_host: false,
+    document_base_url: `${window.location.protocol}//${window.location.host}/uploads/`,
+    file_picker_types: 'image',
+    init_instance_callback: function (editor) {
+
+      var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+
+      var observer = new MutationObserver(function (mutations, instance) {
+        var removedImages = new Array();
+        $.each(mutations, function (index, mutationRecord) {
+          for (var i = 0; i < mutationRecord.removedNodes.length; i++) {
+            var currentNode = mutationRecord.removedNodes[i];
+            if (currentNode.nodeName == 'IMG' && currentNode.className != "mce-clonedresizable") {
+              if (removedImages.indexOf(currentNode.src) >= 0) continue;
+
+              removedImages.push(currentNode.getAttribute("src"));
+              continue;
+            }
+
+            var imgs = $(currentNode).find('img');
+            for (var j = 0; j < imgs.length; j++) {
+              if (removedImages.indexOf(imgs[j].src) >= 0) continue;
+
+              removedImages.push(imgs[j].getAttribute("src"));
+            }
+          }
+        });
+
+        for (let index = 0; index < removedImages.length; index++) {
+          const element = removedImages[index];
+          let formdataDel = new FormData();
+          let ajax = new XMLHttpRequest();
+          formdataDel.append("image", element);
+          ajax.open("POST", `${window.location.origin}/blob/file/delete`);
+          ajax.send(formdataDel);
+        }
+        
+      });
+
+      observer.observe(editor.getBody(), {
+        childList: true,
+        subtree: true
+      });
+    },
+    file_picker_callback: function (cb, value, meta) {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      input.setAttribute('accept', 'image/*');
+      input.onchange = function () {
+        var file = this.files[0];
+        var reader = new FileReader();
+        reader.onload = function () {
+          function completeHandler(event) {
+            let responseText = JSON.parse(event.target.responseText);
+            if (responseText.image && responseText.image !== null) {
+              responseText = responseText.image
+              cb(`${responseText}`, { title: file.name });
+            }
+            else {
+              alert('Upload Failed');
+              cb();
+            }
+          }
+          function errorHandler(event) {
+            alert('Upload Failed');
+            cb();
+          }
+          function abortHandler(event) {
+            alert("Upload Aborted");
+            cb();
+          }
+          var formdataDel = new FormData();
+          var ajax = new XMLHttpRequest();
+          ajax.addEventListener("load", completeHandler, false);
+          ajax.addEventListener("error", errorHandler, false);
+          ajax.addEventListener("abort", abortHandler, false);
+          formdataDel.append("image", file);
+          ajax.open("POST", `${window.location.origin}/blob/file/insert`);
+          ajax.send(formdataDel);
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    },
+    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+  });
+</script>
